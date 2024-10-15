@@ -21,15 +21,15 @@ BTN_URL_REGEX = re.compile(
     r"(([^]+?)(buttonurl|buttonalert):(?:/{0,2})(.+?)(:same)?)"
 )
 
-imdb = IMDb() 
+imdb = IMDb()
 
 BANNED = {}
 SMART_OPEN = '“'
 SMART_CLOSE = '”'
 START_CHAR = ('\'', '"', SMART_OPEN)
 
-# temp db for banned 
-class temp(object):
+# Stub for the temp class and functions that were missing in the original code
+class temp:
     BANNED_USERS = []
     BANNED_CHATS = []
     ME = None
@@ -39,6 +39,12 @@ class temp(object):
     U_NAME = None
     B_NAME = None
     SETTINGS = {}
+
+def get_settings():
+    return {}
+
+def get_size():
+    return 0
 
 async def is_subscribed(bot, query):
     try:
@@ -50,8 +56,10 @@ async def is_subscribed(bot, query):
     else:
         if user.status != 'kicked':
             return True
-
     return False
+
+def save_group_settings():
+    pass
 
 def search_movie_with_redirect_handling(query):
     try:
@@ -78,10 +86,10 @@ async def get_poster(query, bulk=False, id=False, file=None):
         elif file is not None:
             year = re.findall(r'[1-2]\d{3}', file, re.IGNORECASE)
             if year:
-                year = list_to_str(year[:1]) 
+                year = list_to_str(year[:1])
         else:
             year = None
-        
+
         movieid = search_movie_with_redirect_handling(title.lower())
         if not movieid:
             return None
@@ -99,7 +107,7 @@ async def get_poster(query, bulk=False, id=False, file=None):
         movieid = movieid[0].movieID
     else:
         movieid = query
-    
+
     movie = imdb.get_movie(movieid)
     if movie.get("original air date"):
         date = movie["original air date"]
@@ -107,7 +115,7 @@ async def get_poster(query, bulk=False, id=False, file=None):
         date = movie.get("year")
     else:
         date = "N/A"
-    
+
     plot = ""
     if not LONG_IMDB_DESCRIPTION:
         plot = movie.get('plot')
@@ -115,7 +123,7 @@ async def get_poster(query, bulk=False, id=False, file=None):
             plot = plot[0]
     else:
         plot = movie.get('plot outline')
-    
+
     if plot and len(plot) > 800:
         plot = plot[0:800] + "..."
 
