@@ -103,7 +103,7 @@ async def start(client, message):
             reply_markup=reply_markup,
             parse_mode=enums.ParseMode.HTML
         )
-  return
+        return
     data = message.command[1]
     try:
         pre, file_id = data.split('_', 1)
@@ -228,7 +228,7 @@ async def start(client, message):
         except:
             pass
         return await message.reply('No such file exist.')
-        files = files_[0]
+    files = files_[0]
     title = files.file_name
     size=get_size(files.file_size)
     f_caption=files.caption
