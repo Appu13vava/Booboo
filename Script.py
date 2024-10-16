@@ -75,7 +75,14 @@ these are the extra features of Eva Maria
 • /imdb  - <code>get the film information from IMDb source.</code>
 • /search  - <code>get the film information from various sources.</code>"""
     ADMIN_TXT = """Help: <b>Admin mods</b>
+NORSLTS = """
+#NoResults 
 
+ID <b>: {}</b>
+
+Name <b>: {}</b>
+
+Message <b>: {}</b>"""
 <b>NOTE:</b>
 This module only works for my admins
 
