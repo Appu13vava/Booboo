@@ -18,8 +18,8 @@ BOT_TOKEN = environ['BOT_TOKEN']
 
 # Bot settings
 CACHE_TIME = int(environ.get('CACHE_TIME', 300))
-USE_CAPTION_FILTER = bool(environ.get('USE_CAPTION_FILTER', False))
-PICS = (environ.get('PICS', 'https://telegra.ph/file/7e56d907542396289fee4.jpg https://telegra.ph/file/9aa8dd372f4739fe02d85.jpg https://telegra.ph/file/adffc5ce502f5578e2806.jpg https://telegra.ph/file/6937b60bc2617597b92fd.jpg https://telegra.ph/file/09a7abaab340143f9c7e7.jpg https://telegra.ph/file/5a82c4a59bd04d415af1c.jpg https://telegra.ph/file/323986d3bd9c4c1b3cb26.jpg https://telegra.ph/file/b8a82dcb89fb296f92ca0.jpg https://telegra.ph/file/31adab039a85ed88e22b0.jpg https://telegra.ph/file/c0e0f4c3ed53ac8438f34.jpg https://telegra.ph/file/eede835fb3c37e07c9cee.jpg https://telegra.ph/file/e17d2d068f71a9867d554.jpg https://telegra.ph/file/8fb1ae7d995e8735a7c25.jpg https://telegra.ph/file/8fed19586b4aa019ec215.jpg https://telegra.ph/file/8e6c923abd6139083e1de.jpg https://telegra.ph/file/0049d801d29e83d68b001.jpg')).split()
+USE_CAPTION_FILTER = bool(environ.get('USE_CAPTION_FILTER', True))
+PICS = (environ.get('PICS', 'https://graph.org/file/f4b8af8a4b8a84957b3c6-27470ce0ace4822431.jpg https://graph.org/file/9ad714b9adc0d5131879c-e62ce73dbd8ce7c23c.jpg https://graph.org/file/38270ab4d3e973062aeb4-67e331a0e6abdcbb31.jpg https://graph.org/file/2bcb1e980b9c56240a582-157109d2a7a8959b2c.jpg')).split()
 
 # Admins, Channels & Users
 ADMINS = [int(admin) if id_pattern.search(admin) else admin for admin in environ.get('ADMINS', '5788022702').split()]
@@ -38,11 +38,11 @@ COLLECTION_NAME = environ.get('COLLECTION_NAME', 'Telegram_files')
 
 # Others
 LOG_CHANNEL = int(environ.get('LOG_CHANNEL','-1002243715608' ))
-SUPPORT_CHAT = environ.get('SUPPORT_CHAT', 'TeamEvamaria')
+SUPPORT_CHAT = environ.get('SUPPORT_CHAT', 'jaanufilimkatory')
 P_TTI_SHOW_OFF = is_enabled((environ.get('P_TTI_SHOW_OFF', "False")), False)
 IMDB = is_enabled((environ.get('IMDB', "True")), True)
 SINGLE_BUTTON = is_enabled((environ.get('SINGLE_BUTTON', "False")), False)
-CUSTOM_FILE_CAPTION = environ.get("CUSTOM_FILE_CAPTION", None)
+CUSTOM_FILE_CAPTION = environ.get("CUSTOM_FILE_CAPTION", "<code>{file_name}</> <b>ജോയിൻ @filimfaktory")
 BATCH_FILE_CAPTION = environ.get("BATCH_FILE_CAPTION", CUSTOM_FILE_CAPTION)
 IMDB_TEMPLATE = environ.get("IMDB_TEMPLATE", "<b>Query: {query}</b> \n‌‌‌‌IMDb Data:\n\n🏷 Title: <a href={url}>{title}</a>\n🎭 Genres: {genres}\n📆 Year: <a href={url}/releaseinfo>{year}</a>\n🌟 Rating: <a href={url}/ratings>{rating}</a> / 10")
 LONG_IMDB_DESCRIPTION = is_enabled(environ.get("LONG_IMDB_DESCRIPTION", "False"), False)
