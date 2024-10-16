@@ -13,6 +13,7 @@ from typing import List
 from database.users_chats_db import db
 from bs4 import BeautifulSoup
 import requests
+import aiohttp
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -153,20 +154,38 @@ async def broadcast_messages(user_id, message):
         return False, "Error"
     except Exception as e:
         return False, "Error"
-
-async def search_gagala(text):
+  
+async def search_gagala(text, retries=5, backoff_factor=2):
     usr_agent = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
         'Chrome/61.0.3163.100 Safari/537.36'
-        }
+    }
     text = text.replace(" ", '+')
     url = f'https://www.google.com/search?q={text}'
-    response = requests.get(url, headers=usr_agent)
-    response.raise_for_status()
-    soup = BeautifulSoup(response.text, 'html.parser')
-    titles = soup.find_all( 'h3' )
-    return [title.getText() for title in titles]
 
+    for i in range(retries):
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=usr_agent) as response:
+                    if response.status == 429:  # Too Many Requests
+                        retry_after = int(response.headers.get("Retry-After", backoff_factor))
+                        print(f"Rate limit exceeded, retrying after {retry_after} seconds...")
+                        await asyncio.sleep(retry_after)
+                        backoff_factor *= 2  # Exponential backoff
+                        continue  # retry the request
+                    response.raise_for_status()
+                    html = await response.text()
+
+            soup = BeautifulSoup(html, 'lxml')  # Use lxml for faster parsing
+            titles = soup.find_all('h3')
+            return [title.getText() for title in titles]
+        
+        except aiohttp.ClientResponseError as e:
+            print(f"HTTP error: {e}")
+        except Exception as e:
+            print(f"An error occurred: {e}")
+    
+    raise Exception("Failed after multiple retries")
 
 async def get_settings(group_id):
     settings = temp.SETTINGS.get(group_id)
