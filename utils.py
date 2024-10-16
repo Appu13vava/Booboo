@@ -69,15 +69,18 @@ def get_file_id(msg: Message):
             if obj:
                 setattr(obj, "message_type", message_type)
                 return obj
-               
-    def gfilterparser(text, keyword):
+
+
+def gfilterparser(text, keyword):
     if "buttonalert" in text:
-        text = (text.replace("\n", "\\n").replace("\t", "\\t"))
+        text = text.replace("\n", "\\n").replace("\t", "\\t")
+    
     buttons = []
     note_data = ""
     prev = 0
     i = 0
     alerts = []
+
     for match in BTN_URL_REGEX.finditer(text):
         # Check if btnurl is escaped
         n_escapes = 0
@@ -91,7 +94,7 @@ def get_file_id(msg: Message):
             note_data += text[prev:match.start(1)]
             prev = match.end(1)
             if match.group(3) == "buttonalert":
-                # create a thruple with button label, url, and newline status
+                # Create a button with callback data
                 if bool(match.group(5)) and buttons:
                     buttons[-1].append(InlineKeyboardButton(
                         text=match.group(2),
@@ -113,8 +116,7 @@ def get_file_id(msg: Message):
                 buttons.append([InlineKeyboardButton(
                     text=match.group(2),
                     url=match.group(4).replace(" ", "")
-                )])
-
+                ))
         else:
             note_data += text[prev:to_check]
             prev = match.start(1) - 1
@@ -125,6 +127,7 @@ def get_file_id(msg: Message):
         return note_data, buttons, alerts
     except:
         return note_data, buttons, None
+    
 
 async def get_poster(query, bulk=False, id=False, file=None):
     if not id:
