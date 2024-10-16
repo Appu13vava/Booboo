@@ -50,10 +50,10 @@ async def is_subscribed(bot, query):
     else:
         if user.status != 'kicked':
             return True
-
     return False
-    
-    def get_file_id(msg: Message):
+
+
+def get_file_id(msg: Message):
     if msg.media:
         for message_type in (
             "photo",
