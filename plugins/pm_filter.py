@@ -62,12 +62,29 @@ async def fil_mod(client, message):
 
 
 @Client.on_message((filters.group) & filters.text & filters.incoming)
-async def give_filter(client,message):
+
+async def pmxt(bot, message):
+    content = message.text
+    user = message.from_user.first_name
+    user_id = message.from_user.id
+    if content.startswith("/") or content.startswith("#"): return  # ignore commands and hashtags
+    if user_id in ADMINS: return # ignore admins
+    await message.reply_text(
+         text="<b>ʜᴇʏ ᴅᴜᴅᴇ 😍 ,\n\nʏᴏᴜ ᴄᴀɴ'ᴛ ɢᴇᴛ ᴍᴏᴠɪᴇs ꜰʀᴏᴍ ʜᴇʀᴇ. ʀᴇǫᴜᴇsᴛ ᴏɴ ᴏᴜʀ <a href=https://t.me/TGXMALLU_MOVIE>ᴍᴏᴠɪᴇ ɢʀᴏᴜᴘ</a> ᴏʀ ᴄʟɪᴄᴋ ʀᴇǫᴜᴇsᴛ ʜᴇʀᴇ ʙᴜᴛᴛᴏɴ ʙᴇʟᴏᴡ👇</b>",   
+         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("📝 ʀᴇǫᴜᴇsᴛ ʜᴇʀᴇ ", url=f"https://t.me/TGXMALLU_MOVIE")]]))    
+async def give_filter(client, message):
     await global_filters(client, message)
+
+    # Ensure the message is valid
+    if not message.chat or not message.from_user:
+        print("Invalid message or user.")
+        return
+
     group_id = message.chat.id
     name = message.text
 
     keywords = await get_filters(group_id)
+    
     for keyword in reversed(sorted(keywords, key=len)):
         pattern = r"( |^|[^\w])" + re.escape(keyword) + r"( |$|[^\w])"
         if re.search(pattern, name, flags=re.IGNORECASE):
@@ -82,7 +99,7 @@ async def give_filter(client,message):
                         if btn == "[]":
                             await message.reply_text(reply_text, disable_web_page_preview=True)
                         else:
-                            button = eval(btn)
+                            button = eval(btn)  # Use caution with eval
                             await message.reply_text(
                                 reply_text,
                                 disable_web_page_preview=True,
@@ -94,34 +111,26 @@ async def give_filter(client,message):
                             caption=reply_text or ""
                         )
                     else:
-                        button = eval(btn) 
+                        button = eval(btn)  # Use caution with eval
                         await message.reply_cached_media(
                             fileid,
                             caption=reply_text or "",
                             reply_markup=InlineKeyboardMarkup(button)
                         )
                 except Exception as e:
-                    print(e)
+                    print(f"Error while replying: {e}")
                 break 
-
     else:
+        # Check filter mode
         if FILTER_MODE.get(str(message.chat.id)) == "False":
             return
         else:
             await auto_filter(client, message)
 
-
 @Client.on_message(filters.private & filters.text & filters.incoming)
-async def pmxt(bot, message):
-    content = message.text
-    user = message.from_user.first_name
-    user_id = message.from_user.id
-    if content.startswith("/") or content.startswith("#"): return  # ignore commands and hashtags
-    if user_id in ADMINS: return # ignore admins
-    await message.reply_text(
-         text="<b>ʜᴇʏ ᴅᴜᴅᴇ 😍 ,\n\nʏᴏᴜ ᴄᴀɴ'ᴛ ɢᴇᴛ ᴍᴏᴠɪᴇs ꜰʀᴏᴍ ʜᴇʀᴇ. ʀᴇǫᴜᴇsᴛ ᴏɴ ᴏᴜʀ <a href=https://t.me/TGXMALLU_MOVIE>ᴍᴏᴠɪᴇ ɢʀᴏᴜᴘ</a> ᴏʀ ᴄʟɪᴄᴋ ʀᴇǫᴜᴇsᴛ ʜᴇʀᴇ ʙᴜᴛᴛᴏɴ ʙᴇʟᴏᴡ👇</b>",   
-         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("📝 ʀᴇǫᴜᴇsᴛ ʜᴇʀᴇ ", url=f"https://t.me/TGXMALLU_MOVIE")]]))    
-
+async def handle_private_message(client, message):
+    # Call the give_filter function
+    await give_filter(client, message)
 
 @Client.on_callback_query(filters.regex(r"^next"))
 async def next_page(bot, query):
