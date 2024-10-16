@@ -10,7 +10,7 @@ from Script import script
 from info import *
 import pyrogram
 from pyrogram.types import *
-from database.connections_mdb import active_connection, all_connections, gfilters_mdb, delete_connection, if_active, make_active, \
+from database.connections_mdb import active_connection, all_connections, delete_connection, if_active, make_active, \
     make_inactive
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from pyrogram import Client, filters, enums
