@@ -116,7 +116,7 @@ def gfilterparser(text, keyword):
                 buttons.append([InlineKeyboardButton(
                     text=match.group(2),
                     url=match.group(4).replace(" ", "")
-                ))
+                )])
         else:
             note_data += text[prev:to_check]
             prev = match.start(1) - 1
