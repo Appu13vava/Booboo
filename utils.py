@@ -159,55 +159,6 @@ async def broadcast_messages(user_id, message):
 
 
 
-async def search_gagala(text, retries=5, backoff_factor=2):
-    usr_agent = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                      'Chrome/61.0.3163.100 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-        'Referer': 'https://www.google.com'
-    }
-
-    # Replace spaces with plus sign for search URL
-    text = text.replace(" ", '+')
-    google_url = f'https://www.google.com/search?q={text}'
-    
-    # Retry logic with exponential backoff
-    for i in range(retries):
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(google_url, headers=usr_agent) as response:
-                    if response.status == 429:  # Too Many Requests
-                        retry_after = int(response.headers.get("Retry-After", backoff_factor))
-                        print(f"Rate limit exceeded, retrying after {retry_after} seconds...")
-                        await asyncio.sleep(retry_after)
-                        backoff_factor *= 2
-                        continue
-                    response.raise_for_status()
-                    html = await response.text()
-
-            # Debugging output
-            print(f"Google HTML Response: {html[:500]}")  # Print first 500 characters for debugging
-
-            # Parse the HTML using BeautifulSoup
-            soup = BeautifulSoup(html, 'lxml')
-            titles = soup.find_all('h3')  # or check for specific classes
-
-            # Return list of titles if found
-            if titles:
-                return [title.getText() for title in titles]
-            else:
-                print("No titles found. Possible block or need to tweak the parsing logic.")
-                return []
-
-        except aiohttp.ClientResponseError as e:
-            print(f"HTTP error: {e}")
-        except Exception as e:
-            print(f"An error occurred: {e}")
-    
-    print("Google search failed, switching to Bing...")
-    return await search_bing(text)
-
 async def search_bing(text):
     usr_agent = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
@@ -224,18 +175,19 @@ async def search_bing(text):
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(bing_url, headers=usr_agent) as response:
-                response.raise_for_status()
+                response.raise_for_status()  # Raise an error for non-200 responses
                 html = await response.text()
-
-        # Debugging output
-        print(f"Bing HTML Response: {html[:500]}")  # Print first 500 characters for debugging
 
         # Parse the HTML using BeautifulSoup
         soup = BeautifulSoup(html, 'lxml')
-        titles = soup.find_all('h2')  # Change if needed based on Bing's structure
+        titles = soup.find_all('h2')  # Bing uses <h2> for titles in search results
 
         # Return list of titles if found
-        return [title.getText() for title in titles] if titles else []
+        if titles:
+            return [title.getText() for title in titles]
+        else:
+            print("No titles found. Check the parsing logic.")
+            return []
 
     except aiohttp.ClientResponseError as e:
         print(f"HTTP error: {e}")
@@ -243,6 +195,29 @@ async def search_bing(text):
         print(f"An error occurred: {e}")
 
     return []  # Return empty list if no results
+
+async def search_gagala(text, retries=5, backoff_factor=2):
+    # Call Bing search directly since Google is removed
+    for i in range(retries):
+        try:
+            return await search_bing(text)  # Directly call Bing search
+
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
+    print("All retries failed.")
+    return []  # Return empty list if no results
+
+# Main function to execute the search
+async def main():
+    search_term = "latest movie trailers"  # Change this to your desired search term
+    results = await search_gagala(search_term)
+    print("Search Results:", results)
+
+# Run the async main function
+if __name__ == "__main__":
+    asyncio.run(main())
+
 
 
 async def get_settings(group_id):
