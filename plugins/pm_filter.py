@@ -118,17 +118,32 @@ async def next_page(bot, query):
 
 
 @Client.on_callback_query(filters.regex(r"^spolling"))
+
 async def advantage_spoll_choker(bot, query):
     _, user, movie_ = query.data.split('#')
+
+    # Check if query.from_user exists
+    if query.from_user is None:
+        return await query.answer("Invalid user.", show_alert=True)
+
     if int(user) != 0 and query.from_user.id != int(user):
         return await query.answer("okDa", show_alert=True)
+
     if movie_ == "close_spellcheck":
         return await query.message.delete()
+
+    # Check if query.message and query.message.reply_to_message exist
+    if query.message.reply_to_message is None:
+        return await query.answer("No reply message found.", show_alert=True)
+
     movies = SPELL_CHECK.get(query.message.reply_to_message.id)
     if not movies:
         return await query.answer("You are clicking on an old button which is expired.", show_alert=True)
+
     movie = movies[(int(movie_))]
     await query.answer('Checking for Movie in database...')
+    
+    # Call manual_filters and handle movie search results
     k = await manual_filters(bot, query.message, text=movie)
     if k == False:
         files, offset, total_results = await get_search_results(movie, offset=0, filter=True)
@@ -139,8 +154,6 @@ async def advantage_spoll_choker(bot, query):
             k = await query.message.edit('This Movie Not Found In DataBase')
             await asyncio.sleep(10)
             await k.delete()
-
-
 @Client.on_callback_query()
 async def cb_handler(client: Client, query: CallbackQuery):
     if query.data == "close_data":
@@ -729,7 +742,6 @@ async def auto_filter(client, msg, spoll=False):
 
 
 
-
 async def advantage_spell_chok(msg):
     # Ensure the message has text
     if not msg.text:
@@ -797,6 +809,11 @@ async def advantage_spell_chok(msg):
             await k.delete()
             return
 
+        # Ensure msg.from_user exists before accessing its id
+        if msg.from_user is None:
+            await msg.reply("User information is missing, cannot proceed.")
+            return
+
         SPELL_CHECK[msg.id] = movielist
 
         # Build the buttons for the movie suggestions
@@ -813,6 +830,8 @@ async def advantage_spell_chok(msg):
         k = await msg.reply("I couldn't find any relevant movie.")
         await asyncio.sleep(8)
         await k.delete()
+
+        
 
 async def manual_filters(client, message, text=False):
     group_id = message.chat.id
