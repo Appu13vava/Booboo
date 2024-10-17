@@ -156,6 +156,9 @@ async def broadcast_messages(user_id, message):
         return False, "Error"
   
 
+
+
+
 async def search_gagala(text, retries=5, backoff_factor=2):
     usr_agent = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
@@ -174,18 +177,21 @@ async def search_gagala(text, retries=5, backoff_factor=2):
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(google_url, headers=usr_agent) as response:
-                    if response.status == 429:  # Too Many Requests (rate limiting)
+                    if response.status == 429:  # Too Many Requests
                         retry_after = int(response.headers.get("Retry-After", backoff_factor))
                         print(f"Rate limit exceeded, retrying after {retry_after} seconds...")
                         await asyncio.sleep(retry_after)
-                        backoff_factor *= 2  # Exponential backoff
-                        continue  # Retry the request after backoff
-                    response.raise_for_status()  # Raise an error for non-200 responses
+                        backoff_factor *= 2
+                        continue
+                    response.raise_for_status()
                     html = await response.text()
+
+            # Debugging output
+            print(f"Google HTML Response: {html[:500]}")  # Print first 500 characters for debugging
 
             # Parse the HTML using BeautifulSoup
             soup = BeautifulSoup(html, 'lxml')
-            titles = soup.find_all('h3')
+            titles = soup.find_all('h3')  # or check for specific classes
 
             # Return list of titles if found
             if titles:
@@ -200,7 +206,7 @@ async def search_gagala(text, retries=5, backoff_factor=2):
             print(f"An error occurred: {e}")
     
     print("Google search failed, switching to Bing...")
-    return await search_bing(text)  # Switch to Bing as a fallback after retries fail
+    return await search_bing(text)
 
 async def search_bing(text):
     usr_agent = {
@@ -218,15 +224,18 @@ async def search_bing(text):
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(bing_url, headers=usr_agent) as response:
-                response.raise_for_status()  # Raise an error for non-200 responses
+                response.raise_for_status()
                 html = await response.text()
+
+        # Debugging output
+        print(f"Bing HTML Response: {html[:500]}")  # Print first 500 characters for debugging
 
         # Parse the HTML using BeautifulSoup
         soup = BeautifulSoup(html, 'lxml')
-        titles = soup.find_all('h2')
+        titles = soup.find_all('h2')  # Change if needed based on Bing's structure
 
         # Return list of titles if found
-        return [title.getText() for title in titles]
+        return [title.getText() for title in titles] if titles else []
 
     except aiohttp.ClientResponseError as e:
         print(f"HTTP error: {e}")
@@ -234,6 +243,7 @@ async def search_bing(text):
         print(f"An error occurred: {e}")
 
     return []  # Return empty list if no results
+
 
 async def get_settings(group_id):
     settings = temp.SETTINGS.get(group_id)
