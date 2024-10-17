@@ -157,33 +157,47 @@ async def broadcast_messages(user_id, message):
   
 
 
+
+
+
 async def search_gagala(text):
+    # User-Agent header to mimic a real browser request
     usr_agent = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-        'Chrome/61.0.3163.100 Safari/537.36'
+                      'Chrome/111.0.0.0 Safari/537.36'
     }
+    # Format the search query
     text = text.replace(" ", '+')
     url = f'https://www.google.com/search?q={text}'
     
-    print("Searching URL:", url)  # Debug print
+    try:
+        # Make the request with retries
+        response = await make_request(url, usr_agent)
+        # Parse the response with BeautifulSoup
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Debugging output to inspect the raw HTML
+        print("Raw HTML Response:", response.text[:1000])  # Print the first 1000 characters
+        
+        # Adjust the tag and class name based on Google's HTML structure
+        titles = soup.find_all('h3')
+        # Extract text from titles
+        return [title.getText() for title in titles if title.getText()]
     
-    response = requests.get(url, headers=usr_agent)
-    
-    # Check if response is successful
-    if response.status_code != 200:
-        print(f"Error: Received status code {response.status_code}")  # Debug print
+    except Exception as e:
+        print(f"Error during search: {e}")
         return []
-    
-    response.raise_for_status()
-    
-    soup = BeautifulSoup(response.text, 'html.parser')
-    titles = soup.find_all('h3')
-    
-    return [title.getText() for title in titles]
 
-
-
-
+async def make_request(url, headers, retries=3):
+    for attempt in range(retries):
+        try:
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()  # Raise an error for bad responses
+            return response
+        except requests.exceptions.RequestException as e:
+            print(f"Request failed: {e}. Retrying {attempt + 1}/{retries}...")
+            await asyncio.sleep(5)  # Wait before retrying
+    raise Exception("Failed to retrieve data after retries")
 
 
 async def get_settings(group_id):
