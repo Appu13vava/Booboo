@@ -157,9 +157,6 @@ async def broadcast_messages(user_id, message):
   
 
 
-
-
-
 async def search_gagala(text):
     usr_agent = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
@@ -167,26 +164,24 @@ async def search_gagala(text):
     }
     text = text.replace(" ", '+')
     url = f'https://www.google.com/search?q={text}'
+    
+    print("Searching URL:", url)  # Debug print
+    
+    response = requests.get(url, headers=usr_agent)
+    
+    # Check if response is successful
+    if response.status_code != 200:
+        print(f"Error: Received status code {response.status_code}")  # Debug print
+        return []
+    
+    response.raise_for_status()
+    
+    soup = BeautifulSoup(response.text, 'html.parser')
+    titles = soup.find_all('h3')
+    
+    return [title.getText() for title in titles]
 
-    async with aiohttp.ClientSession() as session:
-        try:
-            async with session.get(url, headers=usr_agent) as response:
-                response.raise_for_status()  # Raise an error for bad responses
-                html = await response.text()
-                soup = BeautifulSoup(html, 'html.parser')
-                titles = soup.find_all('h3')
-                
-                # Check if any titles were found
-                if not titles:
-                    return []
 
-                return [title.getText() for title in titles]
-        except aiohttp.ClientError as e:
-            print(f"Network error occurred: {e}")
-            return []
-        except Exception as e:
-            print(f"An error occurred while searching: {e}")
-            return []
 
 
 
