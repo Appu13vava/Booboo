@@ -181,6 +181,9 @@ async def search_gagala(text):
         print(f"Error during search: {e}")
         return []
 
+
+
+
 async def make_request(url, headers, retries=3):
     for attempt in range(retries):
         try:
@@ -188,11 +191,10 @@ async def make_request(url, headers, retries=3):
             response.raise_for_status()  # Raise an error for bad responses
             return response
         except requests.exceptions.RequestException as e:
-            print(f"Request failed: {e}. Retrying {attempt + 1}/{retries}...")
-            await asyncio.sleep(10)  # Increased wait time to avoid hitting rate limit
+            wait_time = 2 ** attempt  # Exponential backoff
+            print(f"Request failed: {e}. Retrying in {wait_time} seconds...")
+            await asyncio.sleep(wait_time)
     raise Exception("Failed to retrieve data after retries")
-
-
 
 
 
