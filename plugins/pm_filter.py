@@ -727,57 +727,88 @@ async def auto_filter(client, msg, spoll=False):
 
 
 async def advantage_spell_chok(msg):
+    # Ensure the message has text
+    if not msg.text:
+        await msg.reply("No text found in the message.")
+        return
+
+    # Clean the query by removing irrelevant words and trimming it
     query = re.sub(
         r"\b(pl(i|e)*?(s|z+|ease|se|ese|(e+)s(e)?)|((send|snd|giv(e)?|gib)(\sme)?)|movie(s)?|new|latest|br((o|u)h?)*|^h(e|a)?(l)*(o)*|mal(ayalam)?|t(h)?amil|file|that|find|und(o)*|kit(t(i|y)?)?o(w)?|thar(u)?(o)*w?|kittum(o)*|aya(k)*(um(o)*)?|full\smovie|any(one)|with\ssubtitle(s)?)",
-        "", msg.text, flags=re.IGNORECASE)  # plis contribute some common words
+        "", msg.text, flags=re.IGNORECASE
+    )
     query = query.strip() + " movie"
+
+    # Perform search
     g_s = await search_gagala(query)
     g_s += await search_gagala(msg.text)
-    gs_parsed = []
+    
     if not g_s:
-        k = await msg.reply("I couldn't find any movie in that name.")
-        await asyncio.sleep(8)
+        k = await msg.reply("I couldn't find any movie with that name. Please check your spelling.")
+        await asyncio.sleep(20)
         await k.delete()
         return
-    regex = re.compile(r".*(imdb|wikipedia).*", re.IGNORECASE)  # look for imdb / wiki results
+    
+    # Filter for IMDb and Wikipedia results
+    regex = re.compile(r".*(imdb|wikipedia).*", re.IGNORECASE)
     gs = list(filter(regex.match, g_s))
-    gs_parsed = [re.sub(
-        r'\b(\-([a-zA-Z-\s])\-\simdb|(\-\s)?imdb|(\-\s)?wikipedia|\(|\)|\-|reviews|full|all|episode(s)?|film|movie|series)',
-        '', i, flags=re.IGNORECASE) for i in gs]
+
+    # Clean up results
+    gs_parsed = [
+        re.sub(r'\b(\-([a-zA-Z-\s])\-\simdb|(\-\s)?imdb|(\-\s)?wikipedia|||\-|reviews|full|all|episode(s)?|film|movie|series)', '', i, flags=re.IGNORECASE)
+        for i in gs
+    ]
+    
+    # If no IMDb or Wikipedia results, attempt to find alternative sources
     if not gs_parsed:
-        reg = re.compile(r"watch(\s[a-zA-Z0-9_\s\-\(\)]*)*\|.*",
-                         re.IGNORECASE)  # match something like Watch Niram | Amazon Prime
+        reg = re.compile(r"watch(\s[a-zA-Z0-9_\s\-]*)*\|.*", re.IGNORECASE)
         for mv in g_s:
             match = reg.match(mv)
             if match:
                 gs_parsed.append(match.group(1))
-    user = msg.from_user.id if msg.from_user else 0
-    movielist = []
-    gs_parsed = list(dict.fromkeys(gs_parsed))  # removing duplicates https://stackoverflow.com/a/7961425
+
+    # Remove duplicates
+    gs_parsed = list(set(gs_parsed))
+
+    # Limit results to top 3
     if len(gs_parsed) > 3:
         gs_parsed = gs_parsed[:3]
+
     if gs_parsed:
+        movielist = []
         for mov in gs_parsed:
-            imdb_s = await get_poster(mov.strip(), bulk=True)  # searching each keyword in imdb
+            imdb_s = await get_poster(mov.strip(), bulk=True)
             if imdb_s:
                 movielist += [movie.get('title') for movie in imdb_s]
-    movielist += [(re.sub(r'(\-|\(|\)|_)', '', i, flags=re.IGNORECASE)).strip() for i in gs_parsed]
-    movielist = list(dict.fromkeys(movielist))  # removing duplicates
-    if not movielist:
-        k = await msg.reply("I couldn't find anything related to that. Check your spelling")
+
+        # Append cleaned parsed results to movielist
+        movielist += [re.sub(r'(\-|||_)', '', i, flags=re.IGNORECASE).strip() for i in gs_parsed]
+        
+        # Remove duplicates again
+        movielist = list(set(movielist))
+
+        if not movielist:
+            k = await msg.reply("I couldn't find anything related to that. Check your spelling.")
+            await asyncio.sleep(8)
+            await k.delete()
+            return
+
+        SPELL_CHECK[msg.id] = movielist
+
+        # Build the buttons for the movie suggestions
+        btn = [
+            [InlineKeyboardButton(text=movie.strip(), callback_data=f"spolling#{msg.from_user.id}#{k}")]
+            for k, movie in enumerate(movielist)
+        ]
+        btn.append([InlineKeyboardButton(text="Close", callback_data=f'spolling#{msg.from_user.id}#close_spellcheck')])
+
+        # Send the reply with suggestions
+        await msg.reply("I couldn't find anything related to that.\nDid you mean any of these?", reply_markup=InlineKeyboardMarkup(btn))
+
+    else:
+        k = await msg.reply("I couldn't find any relevant movie.")
         await asyncio.sleep(8)
         await k.delete()
-        return
-    SPELL_CHECK[msg.id] = movielist
-    btn = [[
-        InlineKeyboardButton(
-            text=movie.strip(),
-            callback_data=f"spolling#{user}#{k}",
-        )
-    ] for k, movie in enumerate(movielist)]
-    btn.append([InlineKeyboardButton(text="Close", callback_data=f'spolling#{user}#close_spellcheck')])
-    await msg.reply("I couldn't find anything related to that\nDid you mean any one of these?",
-                    reply_markup=InlineKeyboardMarkup(btn))
 
 
 async def manual_filters(client, message, text=False):
