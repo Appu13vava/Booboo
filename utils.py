@@ -161,25 +161,15 @@ async def broadcast_messages(user_id, message):
 async def search_gagala(text):
     usr_agent = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                      'Chrome/111.0.0.0 Safari/537.36'
-    }
-
+        'Chrome/61.0.3163.100 Safari/537.36'
+        }
     text = text.replace(" ", '+')
     url = f'https://www.google.com/search?q={text}'
-
-    try:
-        response = await make_request(url, usr_agent)
-        soup = BeautifulSoup(response.text, 'html.parser')
-
-        # Debugging output to inspect the raw HTML
-        print("Raw HTML Response:", response.text[:1000])  # Print the first 1000 characters
-
-        titles = soup.find_all('h3')
-        return [title.getText() for title in titles if title.getText()]
-
-    except Exception as e:
-        print(f"Error during search: {e}")
-        return []
+    response = requests.get(url, headers=usr_agent)
+    response.raise_for_status()
+    soup = BeautifulSoup(response.text, 'html.parser')
+    titles = soup.find_all( 'h3' )
+    return [title.getText() for title in titles]
 
 
 
