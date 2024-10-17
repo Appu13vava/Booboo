@@ -156,35 +156,65 @@ async def broadcast_messages(user_id, message):
         return False, "Error"
   
 
-
-
-async def search_gagala(text):
+async def search_bing(text):
     usr_agent = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-        'Chrome/61.0.3163.100 Safari/537.36'
-        }
+                      'Chrome/61.0.3163.100 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'Referer': 'https://www.bing.com'
+    }
+
+    # Replace spaces with plus sign for search URL
     text = text.replace(" ", '+')
-    url = f'https://www.google.com/search?q={text}'
-    response = requests.get(url, headers=usr_agent)
-    response.raise_for_status()
-    soup = BeautifulSoup(response.text, 'html.parser')
-    titles = soup.find_all( 'h3' )
-    return [title.getText() for title in titles]
+    bing_url = f'https://www.bing.com/search?q={text}'
 
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(bing_url, headers=usr_agent) as response:
+                response.raise_for_status()  # Raise an error for non-200 responses
+                html = await response.text()
 
+        # Parse the HTML using BeautifulSoup
+        soup = BeautifulSoup(html, 'lxml')
+        titles = soup.find_all('h2')  # Bing uses <h2> for titles in search results
 
+        # Return list of titles if found
+        if titles:
+            return [title.getText() for title in titles]
+        else:
+            print("No titles found. Check the parsing logic.")
+            return []
 
-async def make_request(url, headers, retries=3):
-    for attempt in range(retries):
+    except aiohttp.ClientResponseError as e:
+        print(f"HTTP error: {e}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+    return []  # Return empty list if no results
+
+async def search_gagala(text, retries=5, backoff_factor=2):
+    # Call Bing search directly since Google is removed
+    for i in range(retries):
         try:
-            response = requests.get(url, headers=headers)
-            response.raise_for_status()  # Raise an error for bad responses
-            return response
-        except requests.exceptions.RequestException as e:
-            wait_time = 2 ** attempt  # Exponential backoff
-            print(f"Request failed: {e}. Retrying in {wait_time} seconds...")
-            await asyncio.sleep(wait_time)
-    raise Exception("Failed to retrieve data after retries")
+            return await search_bing(text)  # Directly call Bing search
+
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
+    print("All retries failed.")
+    return []  # Return empty list if no results
+
+# Main function to execute the search
+async def main():
+    search_term = "latest movie trailers"  # Change this to your desired search term
+    results = await search_gagala(search_term)
+    print("Search Results:", results)
+
+# Run the async main function
+if __name__ == "__main__":
+    asyncio.run(main())
+
 
 
 
