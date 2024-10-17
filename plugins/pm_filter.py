@@ -727,13 +727,16 @@ async def auto_filter(client, msg, spoll=False):
         await msg.message.delete()
 
 
+
+
+
 async def advantage_spell_chok(msg):
     # Ensure the message has text
     if not msg.text:
         await msg.reply("No text found in the message.")
         return
 
-    # Clean the query
+    # Clean the query by removing irrelevant words and trimming it
     query = re.sub(
         r"\b(pl(i|e)*?(s|z+|ease|se|ese|(e+)s(e)?)|((send|snd|giv(e)?|gib)(\sme)?)|movie(s)?|new|latest|br((o|u)h?)*|^h(e|a)?(l)*(o)*|mal(ayalam)?|t(h)?amil|file|that|find|und(o)*|kit(t(i|y)?)?o(w)?|thar(u)?(o)*w?|kittum(o)*|aya(k)*(um(o)*)?|full\smovie|any(one)|with\ssubtitle(s)?)",
         "", msg.text, flags=re.IGNORECASE
@@ -743,20 +746,16 @@ async def advantage_spell_chok(msg):
     # Perform search
     g_s = await search_gagala(query)
     g_s += await search_gagala(msg.text)
-    
-    print("Search results:", g_s)  # Debug print
-    
+
     if not g_s:
         k = await msg.reply("I couldn't find any movie with that name. Please check your spelling.")
         await asyncio.sleep(20)
         await k.delete()
         return
-    
+
     # Filter for IMDb and Wikipedia results
     regex = re.compile(r".*(imdb|wikipedia).*", re.IGNORECASE)
     gs = list(filter(regex.match, g_s))
-
-    print("Filtered results:", gs)  # Debug print
 
     # Clean up results
     gs_parsed = [
@@ -764,9 +763,7 @@ async def advantage_spell_chok(msg):
         for i in gs
     ]
 
-    print("Parsed results:", gs_parsed)  # Debug print
-    
-    # If no IMDb or Wikipedia results, find alternative sources
+    # If no IMDb or Wikipedia results, attempt to find alternative sources
     if not gs_parsed:
         reg = re.compile(r"watch(\s[a-zA-Z0-9_\s\-]*)*\|.*", re.IGNORECASE)
         for mv in g_s:
@@ -787,12 +784,10 @@ async def advantage_spell_chok(msg):
             imdb_s = await get_poster(mov.strip(), bulk=True)
             if imdb_s:
                 movielist += [movie.get('title') for movie in imdb_s]
-        
-        print("Movie list from IMDb:", movielist)  # Debug print
 
         # Append cleaned parsed results to movielist
         movielist += [re.sub(r'(\-|||_)', '', i, flags=re.IGNORECASE).strip() for i in gs_parsed]
-        
+
         # Remove duplicates again
         movielist = list(set(movielist))
 
@@ -812,13 +807,12 @@ async def advantage_spell_chok(msg):
         btn.append([InlineKeyboardButton(text="Close", callback_data=f'spolling#{msg.from_user.id}#close_spellcheck')])
 
         # Send the reply with suggestions
-        await msg.reply("I found these movie suggestions:", reply_markup=InlineKeyboardMarkup(btn))
+        await msg.reply("Did you mean any of these?", reply_markup=InlineKeyboardMarkup(btn))
 
     else:
         k = await msg.reply("I couldn't find any relevant movie.")
         await asyncio.sleep(8)
         await k.delete()
-
 
 async def manual_filters(client, message, text=False):
     group_id = message.chat.id
