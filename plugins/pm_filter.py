@@ -793,17 +793,23 @@ async def advantage_spell_chok(msg):
             await k.delete()
             return
 
+        # Ensure msg.from_user is valid before using it
+        user_id = msg.from_user.id if msg.from_user else None
+        if user_id is None:
+            await msg.reply("User not found. Cannot process your request.")
+            return
+
         SPELL_CHECK[msg.id] = movielist
 
         # Build the buttons for the movie suggestions
         btn = [
-            [InlineKeyboardButton(text=movie.strip(), callback_data=f"spolling#{msg.from_user.id}#{k}")]
+            [InlineKeyboardButton(text=movie.strip(), callback_data=f"spolling#{user_id}#{k}")]
             for k, movie in enumerate(movielist)
         ]
-        btn.append([InlineKeyboardButton(text="Close", callback_data=f'spolling#{msg.from_user.id}#close_spellcheck')])
+        btn.append([InlineKeyboardButton(text="Close", callback_data=f'spolling#{user_id}#close_spellcheck')])
 
         # Send the reply with suggestions
-        await msg.reply("I couldn't find anything related to that.\nDid you mean any of these?", reply_markup=InlineKeyboardMarkup(btn))
+        await msg.reply("Did you mean any of these?", reply_markup=InlineKeyboardMarkup(btn))
 
     else:
         k = await msg.reply("I couldn't find any relevant movie.")
