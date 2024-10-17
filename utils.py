@@ -158,32 +158,25 @@ async def broadcast_messages(user_id, message):
 
 
 
-
-
 async def search_gagala(text):
-    # User-Agent header to mimic a real browser request
     usr_agent = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
                       'Chrome/111.0.0.0 Safari/537.36'
     }
-    # Format the search query
+
     text = text.replace(" ", '+')
     url = f'https://www.google.com/search?q={text}'
-    
+
     try:
-        # Make the request with retries
         response = await make_request(url, usr_agent)
-        # Parse the response with BeautifulSoup
         soup = BeautifulSoup(response.text, 'html.parser')
-        
+
         # Debugging output to inspect the raw HTML
         print("Raw HTML Response:", response.text[:1000])  # Print the first 1000 characters
-        
-        # Adjust the tag and class name based on Google's HTML structure
+
         titles = soup.find_all('h3')
-        # Extract text from titles
         return [title.getText() for title in titles if title.getText()]
-    
+
     except Exception as e:
         print(f"Error during search: {e}")
         return []
@@ -196,8 +189,12 @@ async def make_request(url, headers, retries=3):
             return response
         except requests.exceptions.RequestException as e:
             print(f"Request failed: {e}. Retrying {attempt + 1}/{retries}...")
-            await asyncio.sleep(5)  # Wait before retrying
+            await asyncio.sleep(10)  # Increased wait time to avoid hitting rate limit
     raise Exception("Failed to retrieve data after retries")
+
+
+
+
 
 
 async def get_settings(group_id):
