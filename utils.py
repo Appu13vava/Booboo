@@ -155,37 +155,85 @@ async def broadcast_messages(user_id, message):
     except Exception as e:
         return False, "Error"
   
+
 async def search_gagala(text, retries=5, backoff_factor=2):
     usr_agent = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-        'Chrome/61.0.3163.100 Safari/537.36'
+                      'Chrome/61.0.3163.100 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'Referer': 'https://www.google.com'
     }
-    text = text.replace(" ", '+')
-    url = f'https://www.google.com/search?q={text}'
 
+    # Replace spaces with plus sign for search URL
+    text = text.replace(" ", '+')
+    google_url = f'https://www.google.com/search?q={text}'
+    
+    # Retry logic with exponential backoff
     for i in range(retries):
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.get(url, headers=usr_agent) as response:
-                    if response.status == 429:  # Too Many Requests
+                async with session.get(google_url, headers=usr_agent) as response:
+                    if response.status == 429:  # Too Many Requests (rate limiting)
                         retry_after = int(response.headers.get("Retry-After", backoff_factor))
                         print(f"Rate limit exceeded, retrying after {retry_after} seconds...")
                         await asyncio.sleep(retry_after)
                         backoff_factor *= 2  # Exponential backoff
-                        continue  # retry the request
-                    response.raise_for_status()
+                        continue  # Retry the request after backoff
+                    response.raise_for_status()  # Raise an error for non-200 responses
                     html = await response.text()
 
-            soup = BeautifulSoup(html, 'lxml')  # Use lxml for faster parsing
+            # Parse the HTML using BeautifulSoup
+            soup = BeautifulSoup(html, 'lxml')
             titles = soup.find_all('h3')
-            return [title.getText() for title in titles]
-        
+
+            # Return list of titles if found
+            if titles:
+                return [title.getText() for title in titles]
+            else:
+                print("No titles found. Possible block or need to tweak the parsing logic.")
+                return []
+
         except aiohttp.ClientResponseError as e:
             print(f"HTTP error: {e}")
         except Exception as e:
             print(f"An error occurred: {e}")
     
-    raise Exception("Failed after multiple retries")
+    print("Google search failed, switching to Bing...")
+    return await search_bing(text)  # Switch to Bing as a fallback after retries fail
+
+async def search_bing(text):
+    usr_agent = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                      'Chrome/61.0.3163.100 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'Referer': 'https://www.bing.com'
+    }
+
+    # Replace spaces with plus sign for search URL
+    text = text.replace(" ", '+')
+    bing_url = f'https://www.bing.com/search?q={text}'
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(bing_url, headers=usr_agent) as response:
+                response.raise_for_status()  # Raise an error for non-200 responses
+                html = await response.text()
+
+        # Parse the HTML using BeautifulSoup
+        soup = BeautifulSoup(html, 'lxml')
+        titles = soup.find_all('h2')
+
+        # Return list of titles if found
+        return [title.getText() for title in titles]
+
+    except aiohttp.ClientResponseError as e:
+        print(f"HTTP error: {e}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+    return []  # Return empty list if no results
 
 async def get_settings(group_id):
     settings = temp.SETTINGS.get(group_id)
