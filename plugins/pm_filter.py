@@ -733,7 +733,7 @@ async def advantage_spell_chok(msg):
         await msg.reply("No text found in the message.")
         return
 
-    # Clean the query by removing irrelevant words and trimming it
+    # Clean the query
     query = re.sub(
         r"\b(pl(i|e)*?(s|z+|ease|se|ese|(e+)s(e)?)|((send|snd|giv(e)?|gib)(\sme)?)|movie(s)?|new|latest|br((o|u)h?)*|^h(e|a)?(l)*(o)*|mal(ayalam)?|t(h)?amil|file|that|find|und(o)*|kit(t(i|y)?)?o(w)?|thar(u)?(o)*w?|kittum(o)*|aya(k)*(um(o)*)?|full\smovie|any(one)|with\ssubtitle(s)?)",
         "", msg.text, flags=re.IGNORECASE
@@ -743,6 +743,8 @@ async def advantage_spell_chok(msg):
     # Perform search
     g_s = await search_gagala(query)
     g_s += await search_gagala(msg.text)
+    
+    print("Search results:", g_s)  # Debug print
     
     if not g_s:
         k = await msg.reply("I couldn't find any movie with that name. Please check your spelling.")
@@ -754,13 +756,17 @@ async def advantage_spell_chok(msg):
     regex = re.compile(r".*(imdb|wikipedia).*", re.IGNORECASE)
     gs = list(filter(regex.match, g_s))
 
+    print("Filtered results:", gs)  # Debug print
+
     # Clean up results
     gs_parsed = [
         re.sub(r'\b(\-([a-zA-Z-\s])\-\simdb|(\-\s)?imdb|(\-\s)?wikipedia|||\-|reviews|full|all|episode(s)?|film|movie|series)', '', i, flags=re.IGNORECASE)
         for i in gs
     ]
+
+    print("Parsed results:", gs_parsed)  # Debug print
     
-    # If no IMDb or Wikipedia results, attempt to find alternative sources
+    # If no IMDb or Wikipedia results, find alternative sources
     if not gs_parsed:
         reg = re.compile(r"watch(\s[a-zA-Z0-9_\s\-]*)*\|.*", re.IGNORECASE)
         for mv in g_s:
@@ -781,6 +787,8 @@ async def advantage_spell_chok(msg):
             imdb_s = await get_poster(mov.strip(), bulk=True)
             if imdb_s:
                 movielist += [movie.get('title') for movie in imdb_s]
+        
+        print("Movie list from IMDb:", movielist)  # Debug print
 
         # Append cleaned parsed results to movielist
         movielist += [re.sub(r'(\-|||_)', '', i, flags=re.IGNORECASE).strip() for i in gs_parsed]
@@ -794,23 +802,17 @@ async def advantage_spell_chok(msg):
             await k.delete()
             return
 
-        # Ensure msg.from_user is valid before using it
-        user_id = msg.from_user.id if msg.from_user else None
-        if user_id is None:
-            await msg.reply("User not found. Cannot process your request.")
-            return
-
         SPELL_CHECK[msg.id] = movielist
 
         # Build the buttons for the movie suggestions
         btn = [
-            [InlineKeyboardButton(text=movie.strip(), callback_data=f"spolling#{user_id}#{k}")]
+            [InlineKeyboardButton(text=movie.strip(), callback_data=f"spolling#{msg.from_user.id}#{k}")]
             for k, movie in enumerate(movielist)
         ]
-        btn.append([InlineKeyboardButton(text="Close", callback_data=f'spolling#{user_id}#close_spellcheck')])
+        btn.append([InlineKeyboardButton(text="Close", callback_data=f'spolling#{msg.from_user.id}#close_spellcheck')])
 
         # Send the reply with suggestions
-        await msg.reply("Did you mean any of these?", reply_markup=InlineKeyboardMarkup(btn))
+        await msg.reply("I found these movie suggestions:", reply_markup=InlineKeyboardMarkup(btn))
 
     else:
         k = await msg.reply("I couldn't find any relevant movie.")
